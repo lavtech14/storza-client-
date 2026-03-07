@@ -9,7 +9,7 @@ interface Item {
 }
 
 function PurchasePage() {
-  const { products } = useProducts();
+  const { products, refreshProducts } = useProducts();
 
   const [supplierName, setSupplierName] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
@@ -92,7 +92,7 @@ function PurchasePage() {
       };
 
       await api.post("/purchases", payload);
-
+      await refreshProducts();
       alert("Purchase created successfully");
 
       setSupplierName("");

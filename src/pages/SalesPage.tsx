@@ -9,7 +9,7 @@ interface Item {
 }
 
 function SalesPage() {
-  const { products } = useProducts();
+  const { products, refreshProducts } = useProducts();
 
   const [customerName, setCustomerName] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
@@ -85,7 +85,7 @@ function SalesPage() {
       };
 
       await api.post("/sales", payload);
-
+      await refreshProducts();
       alert("Sale completed");
 
       setCustomerName("");
