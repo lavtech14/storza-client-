@@ -12,6 +12,7 @@ import PurchasePage from "./pages/PurchasePage.js";
 import PurchaseHistoryPage from "./pages/PurchaseHistory.js";
 
 import { ProductsProvider } from "./context/ProductsProvider";
+import CreateUserPage from "./pages/CreateUserPage.js";
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/create-store" element={<CreateStore />} />
+        <Route path="/create-user" element={<CreateUserPage />} />
 
         <Route
           path="/dashboard"

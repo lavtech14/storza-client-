@@ -3,13 +3,16 @@ import { useAuth } from "../context/useAuth";
 import storzaImage from "../assets/strozaImage.png";
 
 function HomePage() {
-  const { token, logout } = useAuth();
+  const { token, logout, user } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
     navigate("/");
   };
+
+  // Check if user is admin (you can modify this based on your user object structure)
+  const isAdmin = user?.role === "admin" || user?.isAdmin === true;
 
   return (
     <div className="min-h-screen bg-white text-slate-800">
@@ -68,6 +71,24 @@ function HomePage() {
               </>
             ) : (
               <>
+                {/* Admin-only buttons */}
+                {isAdmin && (
+                  <>
+                    <Link
+                      to="/create-store"
+                      className="px-5 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition"
+                    >
+                      Create Store
+                    </Link>
+                    <Link
+                      to="/create-user"
+                      className="px-5 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+                    >
+                      Create User
+                    </Link>
+                  </>
+                )}
+
                 <Link
                   to="/dashboard"
                   className="px-5 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition"
