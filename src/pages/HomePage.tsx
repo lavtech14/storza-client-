@@ -123,7 +123,7 @@ function HomePage() {
 
             <p className="text-slate-600 text-lg mb-8">
               Manage Stock, Generate GST Bills, and Track Sales —<br />
-              All in One Powerful Dashboard.
+              All in One Powerful Dashboard....
             </p>
 
             <div className="flex gap-4">
