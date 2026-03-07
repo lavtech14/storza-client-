@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
+import { Link } from "react-router-dom";
 
 interface User {
   _id: string;
@@ -230,6 +231,12 @@ function CreateUserPage() {
           </table>
         </div>
       )}
+      <Link
+        to="/"
+        className="inline-block mt-4 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+      >
+        ← Back to Home
+      </Link>
     </div>
   );
 }

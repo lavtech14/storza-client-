@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useNavigate, NavLink } from "react-router-dom";
+import { useNavigate, NavLink, Link } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { useTheme } from "../context/useTheme";
 import {
@@ -51,9 +51,12 @@ function MainLayout({ children }: { children: ReactNode }) {
       <aside className="w-64 bg-white dark:bg-gray-800 shadow-lg flex flex-col p-6">
         {/* Top: Brand + Dark Mode Toggle */}
         <div className="flex flex-col items-center mb-8">
-          <h2 className="text-2xl font-bold text-blue-600 mb-4 text-center">
-            Storza 🚀
-          </h2>
+          <Link to="/" className="mb-4">
+            <h2 className="text-2xl font-bold text-blue-600 mb-4 text-center">
+              Storza 🚀
+            </h2>
+          </Link>
+
           <button
             onClick={toggleTheme}
             className="flex items-center gap-2 px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition"
