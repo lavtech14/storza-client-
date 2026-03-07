@@ -1,91 +1,84 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import api from "../api/axios";
-
-interface SaleItem {
-  productId: string;
-  quantity: number;
-  price: number;
-  total: number;
-}
 
 interface Sale {
   _id: string;
+  invoiceNumber: string;
+  customerName?: string;
+  totalAmount: number;
+  paymentMethod: string;
   createdAt: string;
-  grandTotal: number;
-  paymentMode: string;
-  items: SaleItem[];
 }
 
-function SalesHistoryPage() {
+function SalesHistory() {
   const [sales, setSales] = useState<Sale[]>([]);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let isMounted = true;
-
-    const fetchSales = async () => {
-      try {
-        const res = await api.get("/sales");
-        if (isMounted) {
-          setSales(res.data);
-        }
-      } catch (error) {
-        console.error(error);
-      }
-    };
-
     fetchSales();
-
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
+  const fetchSales = async () => {
+    try {
+      const response = await api.get("/sales");
+      setSales(response.data.data || response.data);
+    } catch (error) {
+      console.error("Error fetching sales:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  if (loading) {
+    return <div className="p-8">Loading...</div>;
+  }
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Sales History</h1>
+    <div className="p-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Sales History</h1>
 
-      <div className="space-y-4">
-        {sales.map((sale) => (
-          <div
-            key={sale._id}
-            className="bg-white dark:bg-gray-900 border dark:border-gray-800 p-4 rounded-xl shadow-sm"
-          >
-            <div
-              className="flex justify-between cursor-pointer"
-              onClick={() =>
-                setExpandedId(expandedId === sale._id ? null : sale._id)
-              }
-            >
-              <div>
-                <p className="font-semibold">
-                  {new Date(sale.createdAt).toLocaleString()}
-                </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Payment: {sale.paymentMode}
-                </p>
-              </div>
-
-              <div className="text-lg font-bold">₹{sale.grandTotal}</div>
-            </div>
-
-            {expandedId === sale._id && (
-              <div className="mt-4 border-t pt-4 space-y-2">
-                {sale.items.map((item, index) => (
-                  <div key={index} className="flex justify-between text-sm">
-                    <span>
-                      Qty: {item.quantity} × ₹{item.price}
-                    </span>
-                    <span>₹{item.total}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+        <button
+          onClick={() => (window.location.href = "/sales/new")}
+          className="px-4 py-2 bg-green-500 text-white rounded"
+        >
+          New Sale
+        </button>
       </div>
+
+      {sales.length === 0 ? (
+        <p>No sales found</p>
+      ) : (
+        <table className="w-full border">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="p-2 text-left">Date</th>
+              <th className="p-2 text-left">Invoice</th>
+              <th className="p-2 text-left">Customer</th>
+              <th className="p-2 text-left">Amount</th>
+              <th className="p-2 text-left">Payment</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {sales.map((sale) => (
+              <tr key={sale._id} className="border-t">
+                <td className="p-2">{formatDate(sale.createdAt)}</td>
+                <td className="p-2">{sale.invoiceNumber}</td>
+                <td className="p-2">{sale.customerName || "Walk-in"}</td>
+                <td className="p-2">₹{sale.totalAmount}</td>
+                <td className="p-2">{sale.paymentMethod}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
 
-export default SalesHistoryPage;
+export default SalesHistory;

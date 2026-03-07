@@ -1,65 +1,77 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import api from "../api/axios";
-
-interface Product {
-  _id: string;
-  name: string;
-  category: string; // add this
-  price: number;
-  stock: number;
-  gstRate: number;
-}
+import { useProducts } from "../context/useProducts";
 
 function ProductPage() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const { products, loading, refreshProducts } = useProducts();
   const [showForm, setShowForm] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [newProduct, setNewProduct] = useState({
-    name: "",
-    price: 0,
-    stock: 0,
-    category: "",
-    gstRate: 0,
-    hsnCode: "",
-  });
 
-  const fetchProducts = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get("/products");
-      setProducts(res.data);
-    } catch (error) {
-      console.error(error, "Error fetching products");
-    } finally {
-      setLoading(false);
-    }
+  const initialState = {
+    name: "",
+    category: "general",
+    sku: "",
+    brand: "",
+    unit: "piece",
+    buyingPrice: "",
+    sellingPrice: "",
+    discountPrice: "",
+    gst: "0",
+    hsnCode: "",
+    barcode: "",
+    quantity: "0",
+    minStockAlert: "5",
+    expiryDate: "",
   };
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
+  const [newProduct, setNewProduct] = useState(initialState);
+
+  const handleChange = (field: string, value: string) => {
+    setNewProduct((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
 
   const handleCreateProduct = async () => {
     try {
-      if (!newProduct.name || !newProduct.category) {
-        alert("Name and Category are required");
+      if (!newProduct.name.trim()) {
+        alert("Product name is required");
         return;
       }
+      const parseNumber = (value: string) =>
+        value.trim() === "" ? undefined : Number(value);
 
-      await api.post("/products", newProduct);
+      const cleanString = (value: string) =>
+        value.trim() === "" ? undefined : value.trim();
 
-      setShowForm(false);
+      await api.post("/products", {
+        name: newProduct.name.trim(),
+        category: newProduct.category,
 
-      setNewProduct({
-        name: "",
-        price: 0,
-        stock: 0,
-        category: "",
-        gstRate: 0,
-        hsnCode: "",
+        sku: cleanString(newProduct.sku),
+        brand: cleanString(newProduct.brand),
+        unit: newProduct.unit,
+
+        buyingPrice: parseNumber(newProduct.buyingPrice),
+        sellingPrice: parseNumber(newProduct.sellingPrice),
+        discountPrice: parseNumber(newProduct.discountPrice),
+
+        gst: parseNumber(newProduct.gst),
+        hsnCode: cleanString(newProduct.hsnCode),
+
+        barcode: cleanString(newProduct.barcode),
+
+        quantity: parseNumber(newProduct.quantity) ?? 0,
+        minStockAlert: parseNumber(newProduct.minStockAlert) ?? 5,
+
+        expiryDate: newProduct.expiryDate
+          ? new Date(newProduct.expiryDate)
+          : undefined,
       });
 
-      fetchProducts();
+      setShowForm(false);
+      setNewProduct(initialState);
+      await refreshProducts();
     } catch (error) {
       console.error(error);
       alert("Error creating product");
@@ -67,147 +79,222 @@ function ProductPage() {
   };
 
   return (
-    <div className="p-6 min-h-screen bg-gradient-to-br from-blue-200 via-purple-200 to-pink-200 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 transition-all duration-500">
-      {/* Add Product Button */}
-      <button
-        className="btn-primary mb-6"
-        onClick={() => setShowForm(!showForm)}
-      >
-        {showForm ? "Close Form" : "Add Product"}
-      </button>
+    <div className="p-8 min-h-screen bg-slate-50 dark:bg-slate-950">
+      {/* HEADER */}
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-2xl font-bold">Products</h1>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="px-5 py-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white"
+        >
+          {showForm ? "Close Form" : "Add Product"}
+        </button>
+      </div>
 
-      {/* Product Form */}
+      {/* FORM */}
       {showForm && (
-        <div className="max-w-4xl mx-auto p-6 rounded-2xl backdrop-blur-xl bg-white/30 dark:bg-white/5 border border-white/40 dark:border-white/10 shadow-2xl mb-8">
-          <h2 className="text-xl font-bold mb-6">Add New Product</h2>
+        <div className="bg-white dark:bg-slate-900 border rounded-xl p-8 mb-8">
+          <h2 className="text-xl font-semibold mb-6">Create Product</h2>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <label className="block mb-1 font-medium">Product Name</label>
-              <input
-                type="text"
-                className="input-field"
-                value={newProduct.name}
-                onChange={(e) =>
-                  setNewProduct({ ...newProduct, name: e.target.value })
-                }
-              />
-            </div>
+          <div className="grid md:grid-cols-3 gap-5">
+            <Input
+              label="Product Name"
+              value={newProduct.name}
+              onChange={(v) => handleChange("name", v)}
+            />
 
-            <div>
-              <label className="block mb-1 font-medium">Category</label>
-              <input
-                type="text"
-                className="input-field"
-                value={newProduct.category}
-                onChange={(e) =>
-                  setNewProduct({ ...newProduct, category: e.target.value })
-                }
-              />
-            </div>
+            <Input
+              label="Category"
+              value={newProduct.category}
+              onChange={(v) => handleChange("category", v)}
+            />
 
-            <div>
-              <label className="block mb-1 font-medium">Price</label>
-              <input
-                type="number"
-                className="input-field"
-                value={newProduct.price}
-                onChange={(e) =>
-                  setNewProduct({
-                    ...newProduct,
-                    price: Number(e.target.value),
-                  })
-                }
-              />
-            </div>
+            <Input
+              label="Brand"
+              value={newProduct.brand}
+              onChange={(v) => handleChange("brand", v)}
+            />
 
-            <div>
-              <label className="block mb-1 font-medium">Stock</label>
-              <input
-                type="number"
-                className="input-field"
-                value={newProduct.stock}
-                onChange={(e) =>
-                  setNewProduct({
-                    ...newProduct,
-                    stock: Number(e.target.value),
-                  })
-                }
-              />
-            </div>
+            <Input
+              label="SKU"
+              value={newProduct.sku}
+              onChange={(v) => handleChange("sku", v)}
+            />
 
-            <div>
-              <label className="block mb-1 font-medium">GST Rate (%)</label>
-              <input
-                type="number"
-                className="input-field"
-                value={newProduct.gstRate}
-                onChange={(e) =>
-                  setNewProduct({
-                    ...newProduct,
-                    gstRate: Number(e.target.value),
-                  })
-                }
-              />
-            </div>
+            <Select
+              label="Unit"
+              value={newProduct.unit}
+              options={["kg", "gram", "litre", "ml", "piece", "packet", "box"]}
+              onChange={(v) => handleChange("unit", v)}
+            />
 
-            <div>
-              <label className="block mb-1 font-medium">HSN Code</label>
-              <input
-                type="text"
-                className="input-field"
-                value={newProduct.hsnCode}
-                onChange={(e) =>
-                  setNewProduct({ ...newProduct, hsnCode: e.target.value })
-                }
-              />
-            </div>
+            <Select
+              label="GST (%)"
+              value={newProduct.gst}
+              options={["0", "5", "12", "18", "28"]}
+              onChange={(v) => handleChange("gst", v)}
+            />
+
+            <Input
+              label="Buying Price"
+              type="number"
+              value={newProduct.buyingPrice}
+              onChange={(v) => handleChange("buyingPrice", v)}
+            />
+
+            <Input
+              label="Selling Price"
+              type="number"
+              value={newProduct.sellingPrice}
+              onChange={(v) => handleChange("sellingPrice", v)}
+            />
+
+            <Input
+              label="Discount Price"
+              type="number"
+              value={newProduct.discountPrice}
+              onChange={(v) => handleChange("discountPrice", v)}
+            />
+
+            <Input
+              label="Quantity"
+              type="number"
+              value={newProduct.quantity}
+              onChange={(v) => handleChange("quantity", v)}
+            />
+
+            <Input
+              label="Min Stock Alert"
+              type="number"
+              value={newProduct.minStockAlert}
+              onChange={(v) => handleChange("minStockAlert", v)}
+            />
+
+            <Input
+              label="HSN Code"
+              value={newProduct.hsnCode}
+              onChange={(v) => handleChange("hsnCode", v)}
+            />
+
+            <Input
+              label="Barcode"
+              value={newProduct.barcode}
+              onChange={(v) => handleChange("barcode", v)}
+            />
+
+            <Input
+              label="Expiry Date"
+              type="date"
+              value={newProduct.expiryDate}
+              onChange={(v) => handleChange("expiryDate", v)}
+            />
           </div>
 
           <div className="mt-6 text-right">
-            <button className="btn-success" onClick={handleCreateProduct}>
+            <button
+              onClick={handleCreateProduct}
+              className="px-6 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white"
+            >
               Save Product
             </button>
           </div>
         </div>
       )}
 
-      {/* Products Table */}
-      <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
-        Products
-      </h1>
-
-      {loading ? (
-        <p className="text-gray-700 dark:text-gray-400">Loading...</p>
-      ) : (
-        <div className="overflow-x-auto rounded-2xl backdrop-blur-xl bg-white/30 dark:bg-white/5 border border-white/40 dark:border-white/10 shadow-2xl">
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-gray-100 dark:bg-gray-800">
+      {/* TABLE */}
+      {!loading && products.length > 0 && (
+        <div className="bg-white border rounded-xl overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-100">
               <tr>
-                <th className="p-3">Name</th>
-                <th className="p-3">Category</th>
-                <th className="p-3">Price</th>
-                <th className="p-3">Stock</th>
-                <th className="p-3">GST %</th>
+                <th className="p-3 text-left">Name</th>
+                <th className="p-3 text-left">Brand</th>
+                <th className="p-3 text-left">Unit</th>
+                <th className="p-3 text-left">Selling</th>
+                <th className="p-3 text-left">GST</th>
+                <th className="p-3 text-left">Qty</th>
+                <th className="p-3 text-left">Min Alert</th>
               </tr>
             </thead>
             <tbody>
-              {products.map((product) => (
-                <tr
-                  key={product._id}
-                  className="border-t hover:bg-white/20 dark:hover:bg-gray-700 transition-all"
-                >
-                  <td className="p-3">{product.name}</td>
-                  <td className="p-3">{product.category}</td>
-                  <td className="p-3">₹{product.price}</td>
-                  <td className="p-3">{product.stock}</td>
-                  <td className="p-3">{product.gstRate}</td>
+              {products.map((p) => (
+                <tr key={p._id} className="border-t">
+                  <td className="p-3">{p.name}</td>
+                  <td className="p-3">{p.brand}</td>
+                  <td className="p-3">{p.unit}</td>
+                  <td className="p-3">₹{p.sellingPrice}</td>
+                  <td className="p-3">{p.gst}%</td>
+                  <td className="p-3">{p.quantity}</td>
+                  <td className="p-3">
+                    {p.quantity <= (p.minStockAlert ?? 5) ? (
+                      <span className="text-red-500 font-medium">
+                        Low Stock
+                      </span>
+                    ) : (
+                      "OK"
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
+    </div>
+  );
+}
+
+/* Reusable Components */
+
+function Input({
+  label,
+  value,
+  onChange,
+  type = "text",
+}: {
+  label: string;
+  value: string;
+  type?: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div>
+      <label className="block mb-1 text-sm font-medium">{label}</label>
+      <input
+        type={type}
+        className="w-full border rounded-lg px-3 py-2"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </div>
+  );
+}
+
+function Select({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: string[];
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div>
+      <label className="block mb-1 text-sm font-medium">{label}</label>
+      <select
+        className="w-full border rounded-lg px-3 py-2"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        {options.map((opt) => (
+          <option key={opt} value={opt}>
+            {opt}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }

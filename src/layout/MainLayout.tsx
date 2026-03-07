@@ -73,6 +73,12 @@ function MainLayout({ children }: { children: ReactNode }) {
             icon={<HiClipboardList />}
             label="Sales History"
           />
+          <SidebarLink to="/purchases" icon={<HiHome />} label="Purchases" />
+          <SidebarLink
+            to="/purchases-history"
+            icon={<HiHome />}
+            label="Purchases History"
+          />
         </nav>
 
         {/* Logout */}

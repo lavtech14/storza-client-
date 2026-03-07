@@ -5,22 +5,22 @@ import { useProducts } from "../context/useProducts";
 interface Item {
   productId: string;
   quantity: number;
-  price: number;
+  buyPrice: number;
 }
 
-function SalesPage() {
+function PurchasePage() {
   const { products } = useProducts();
 
-  const [customerName, setCustomerName] = useState("");
+  const [supplierName, setSupplierName] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [items, setItems] = useState<Item[]>([
-    { productId: "", quantity: 1, price: 0 },
+    { productId: "", quantity: 1, buyPrice: 0 },
   ]);
 
   const addRow = () => {
-    setItems([...items, { productId: "", quantity: 1, price: 0 }]);
+    setItems([...items, { productId: "", quantity: 1, buyPrice: 0 }]);
   };
 
   const removeRow = (index: number) => {
@@ -44,25 +44,35 @@ function SalesPage() {
 
     const updated = [...items];
     updated[index].productId = productId;
-    updated[index].price = product?.sellingPrice ?? 0;
+    updated[index].buyPrice = product?.buyingPrice ?? 0;
 
     setItems(updated);
   };
 
   const getTotal = () => {
     return items.reduce((sum, item) => {
-      return sum + item.quantity * item.price;
+      return sum + item.quantity * item.buyPrice;
     }, 0);
   };
 
   const validateForm = () => {
+    if (!supplierName.trim()) {
+      alert("Please enter supplier name");
+      return false;
+    }
+
     if (items.some((item) => !item.productId)) {
-      alert("Please select a product");
+      alert("Please select a product for all rows");
       return false;
     }
 
     if (items.some((item) => item.quantity <= 0)) {
       alert("Quantity must be greater than 0");
+      return false;
+    }
+
+    if (items.some((item) => item.buyPrice < 0)) {
+      alert("Buy price cannot be negative");
       return false;
     }
 
@@ -76,24 +86,21 @@ function SalesPage() {
       setIsSubmitting(true);
 
       const payload = {
-        customerName: customerName.trim(),
+        supplierName: supplierName.trim(),
         paymentMethod,
-        items: items.map((item) => ({
-          productId: item.productId,
-          quantity: item.quantity,
-        })),
+        items,
       };
 
-      await api.post("/sales", payload);
+      await api.post("/purchases", payload);
 
-      alert("Sale completed");
+      alert("Purchase created successfully");
 
-      setCustomerName("");
+      setSupplierName("");
       setPaymentMethod("cash");
-      setItems([{ productId: "", quantity: 1, price: 0 }]);
+      setItems([{ productId: "", quantity: 1, buyPrice: 0 }]);
     } catch (error) {
       console.error(error);
-      alert("Error creating sale");
+      alert("Error creating purchase");
     } finally {
       setIsSubmitting(false);
     }
@@ -101,17 +108,19 @@ function SalesPage() {
 
   return (
     <div className="p-8 min-h-screen bg-slate-50 dark:bg-slate-950">
-      <h1 className="text-2xl font-bold mb-6">Create Sale</h1>
+      <h1 className="text-2xl font-bold mb-6">Create Purchase</h1>
 
-      {/* Customer */}
+      {/* Supplier */}
       <div className="mb-6">
-        <label className="block mb-1 text-sm font-medium">Customer Name</label>
+        <label className="block mb-1 text-sm font-medium">
+          Supplier Name *
+        </label>
 
         <input
           className="border px-3 py-2 rounded-lg w-full max-w-md"
-          value={customerName}
-          onChange={(e) => setCustomerName(e.target.value)}
-          placeholder="Enter customer name"
+          value={supplierName}
+          onChange={(e) => setSupplierName(e.target.value)}
+          placeholder="Enter supplier name"
           disabled={isSubmitting}
         />
       </div>
@@ -139,7 +148,7 @@ function SalesPage() {
           <tr>
             <th className="p-3 text-left">Product *</th>
             <th className="p-3 text-left">Quantity *</th>
-            <th className="p-3 text-left">Price (₹)</th>
+            <th className="p-3 text-left">Buy Price (₹) *</th>
             <th className="p-3 text-left">Total (₹)</th>
             <th className="p-3 text-left">Action</th>
           </tr>
@@ -180,12 +189,23 @@ function SalesPage() {
                 />
               </td>
 
-              {/* Price */}
-              <td className="p-3">₹{item.price}</td>
+              {/* Buy Price */}
+              <td className="p-3">
+                <input
+                  type="number"
+                  min="0"
+                  className="border px-3 py-2 rounded-lg w-32"
+                  value={item.buyPrice}
+                  onChange={(e) =>
+                    handleChange(index, "buyPrice", Number(e.target.value))
+                  }
+                  disabled={isSubmitting}
+                />
+              </td>
 
               {/* Row Total */}
               <td className="p-3 font-medium">
-                ₹{(item.quantity * item.price).toFixed(2)}
+                ₹{(item.quantity * item.buyPrice).toFixed(2)}
               </td>
 
               {/* Remove */}
@@ -225,10 +245,10 @@ function SalesPage() {
         disabled={isSubmitting}
         className="mt-4 px-6 py-2 bg-emerald-500 text-white rounded-lg disabled:opacity-50"
       >
-        {isSubmitting ? "Processing..." : "Complete Sale"}
+        {isSubmitting ? "Creating..." : "Save Purchase"}
       </button>
     </div>
   );
 }
 
-export default SalesPage;
+export default PurchasePage;
