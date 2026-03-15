@@ -1,11 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
-
-interface Product {
-  _id: string;
-  quantity: number;
-  minStockAlert?: number;
-}
+import SalesChart from "../components/SalesChart";
 
 interface Sale {
   _id: string;
@@ -23,20 +18,30 @@ interface Purchase {
   purchaseDate: string;
 }
 
+interface DashboardData {
+  totalProducts: number;
+  lowStock: number;
+
+  totalSales: number;
+  salesRevenue: number;
+
+  todaySales: number;
+  todayRevenue: number;
+
+  monthlyRevenue: number;
+
+  totalPurchases: number;
+  purchaseAmount: number;
+
+  profit: number;
+
+  recentSales: Sale[];
+  recentPurchases: Purchase[];
+}
+
 function Dashboard() {
   const [loading, setLoading] = useState(true);
-
-  const [totalProducts, setTotalProducts] = useState(0);
-  const [lowStock, setLowStock] = useState(0);
-
-  const [totalSales, setTotalSales] = useState(0);
-  const [salesRevenue, setSalesRevenue] = useState(0);
-
-  const [totalPurchases, setTotalPurchases] = useState(0);
-  const [purchaseAmount, setPurchaseAmount] = useState(0);
-
-  const [recentPurchases, setRecentPurchases] = useState<Purchase[]>([]);
-  const [recentSales, setRecentSales] = useState<Sale[]>([]);
+  const [data, setData] = useState<DashboardData | null>(null);
 
   useEffect(() => {
     fetchDashboard();
@@ -44,45 +49,8 @@ function Dashboard() {
 
   const fetchDashboard = async () => {
     try {
-      const [productsRes, salesRes, purchaseRes] = await Promise.all([
-        api.get("/products"),
-        api.get("/sales"),
-        api.get("/purchases"),
-      ]);
-
-      const products: Product[] = productsRes.data.data || productsRes.data;
-      const sales: Sale[] = salesRes.data.data || salesRes.data;
-      const purchases: Purchase[] = purchaseRes.data.data || purchaseRes.data;
-
-      /* PRODUCTS */
-      setTotalProducts(products.length);
-
-      const lowStockItems = products.filter(
-        (p) => p.quantity <= (p.minStockAlert ?? 5),
-      ).length;
-
-      setLowStock(lowStockItems);
-
-      /* SALES */
-      setTotalSales(sales.length);
-
-      const revenue = sales.reduce((sum, sale) => sum + sale.totalAmount, 0);
-
-      setSalesRevenue(revenue);
-
-      setRecentSales(sales.slice(-5).reverse());
-
-      /* PURCHASES */
-      setTotalPurchases(purchases.length);
-
-      const purchaseTotal = purchases.reduce(
-        (sum, p) => sum + p.totalAmount,
-        0,
-      );
-
-      setPurchaseAmount(purchaseTotal);
-
-      setRecentPurchases(purchases.slice(-5).reverse());
+      const res = await api.get("/dashboard");
+      setData(res.data);
     } catch (error) {
       console.error("Dashboard error:", error);
     } finally {
@@ -90,7 +58,7 @@ function Dashboard() {
     }
   };
 
-  if (loading) {
+  if (loading || !data) {
     return <div className="p-8">Loading dashboard...</div>;
   }
 
@@ -100,14 +68,21 @@ function Dashboard() {
 
       {/* STATS */}
       <div className="grid md:grid-cols-4 gap-6 mb-10">
-        <StatCard title="Total Products" value={totalProducts} />
-        <StatCard title="Low Stock Items" value={lowStock} />
+        <StatCard title="Total Products" value={data.totalProducts} />
+        <StatCard title="Low Stock Items" value={data.lowStock} />
 
-        <StatCard title="Total Sales" value={totalSales} />
-        <StatCard title="Sales Revenue" value={`₹${salesRevenue}`} />
+        <StatCard title="Total Sales" value={data.totalSales} />
+        <StatCard title="Sales Revenue" value={`₹${data.salesRevenue}`} />
 
-        <StatCard title="Total Purchases" value={totalPurchases} />
-        <StatCard title="Purchase Amount" value={`₹${purchaseAmount}`} />
+        <StatCard title="Today's Sales" value={data.todaySales} />
+        <StatCard title="Today's Revenue" value={`₹${data.todayRevenue}`} />
+
+        <StatCard title="Monthly Revenue" value={`₹${data.monthlyRevenue}`} />
+
+        <StatCard title="Profit" value={`₹${data.profit}`} />
+
+        <StatCard title="Total Purchases" value={data.totalPurchases} />
+        <StatCard title="Purchase Amount" value={`₹${data.purchaseAmount}`} />
       </div>
 
       {/* RECENT SALES */}
@@ -124,7 +99,7 @@ function Dashboard() {
           </thead>
 
           <tbody>
-            {recentSales.map((sale) => (
+            {data.recentSales.map((sale) => (
               <tr key={sale._id} className="border-t">
                 <td className="p-2">{sale.invoiceNumber}</td>
                 <td className="p-2">{sale.customerName || "Walk-in"}</td>
@@ -150,7 +125,7 @@ function Dashboard() {
           </thead>
 
           <tbody>
-            {recentPurchases.map((purchase) => (
+            {data.recentPurchases.map((purchase) => (
               <tr key={purchase._id} className="border-t">
                 <td className="p-2">
                   {new Date(purchase.purchaseDate).toLocaleDateString()}
@@ -163,6 +138,7 @@ function Dashboard() {
           </tbody>
         </table>
       </div>
+      <SalesChart />
     </div>
   );
 }

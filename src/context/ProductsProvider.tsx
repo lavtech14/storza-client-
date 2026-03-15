@@ -8,20 +8,38 @@ interface Props {
 }
 
 export function ProductsProvider({ children }: Props) {
-  const { token } = useAuth(); // 👈 get token from auth
+  const { token } = useAuth();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const refreshProducts = async () => {
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const refreshProducts = async (
+    pageParam: number = 1,
+    limitParam: number = 10,
+    search: string = "",
+  ) => {
     try {
       setLoading(true);
 
-      const res = await api.get("/products");
+      const res = await api.get("/products", {
+        params: {
+          page: pageParam,
+          limit: limitParam,
+          search,
+        },
+      });
 
-      const data = res.data.data || res.data;
+      const responseData = res.data;
 
-      setProducts(data);
+      setProducts(responseData.data || []);
+      setTotal(responseData.pagination?.total || 0);
+      setTotalPages(responseData.pagination?.totalPages || 1);
+      setPage(responseData.pagination?.page || 1);
     } catch (error) {
       console.error("Failed to load products", error);
       setProducts([]);
@@ -32,7 +50,7 @@ export function ProductsProvider({ children }: Props) {
 
   useEffect(() => {
     if (token) {
-      refreshProducts(); // 👈 only run when token exists
+      refreshProducts();
     }
   }, [token]);
 
@@ -41,6 +59,10 @@ export function ProductsProvider({ children }: Props) {
       value={{
         products,
         loading,
+        page,
+        limit,
+        total,
+        totalPages,
         refreshProducts,
       }}
     >

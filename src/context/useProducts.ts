@@ -2,5 +2,11 @@ import { useContext } from "react";
 import { ProductsContext } from "./ProductsContext";
 
 export const useProducts = () => {
-  return useContext(ProductsContext);
+  const context = useContext(ProductsContext);
+
+  if (!context) {
+    throw new Error("useProducts must be used within a ProductsProvider");
+  }
+
+  return context;
 };

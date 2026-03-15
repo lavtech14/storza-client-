@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import api from "../api/axios";
+import useDebounce from "../hooks/useDebounce";
+import { useNavigate } from "react-router-dom";
 
 interface PurchaseItem {
   productId: {
@@ -12,30 +14,48 @@ interface PurchaseItem {
 interface Purchase {
   _id: string;
   supplierName: string;
-
   subtotal: number;
   gstAmount: number;
   totalAmount: number;
-
   paymentMethod: string;
-
   createdAt: string;
-
   items?: PurchaseItem[];
 }
 
 function PurchaseHistory() {
+  const navigate = useNavigate();
   const [purchases, setPurchases] = useState<Purchase[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
 
   useEffect(() => {
     fetchPurchases();
-  }, []);
+  }, [page, debouncedSearch, limit]);
 
   const fetchPurchases = async () => {
     try {
-      const response = await api.get("/purchases");
-      setPurchases(response.data.data || response.data);
+      setLoading(true);
+
+      const response = await api.get("/purchases", {
+        params: {
+          page,
+          limit,
+          search: debouncedSearch,
+        },
+      });
+
+      setPurchases(response.data.data || []);
+      setTotalPages(response.data.pagination?.totalPages || 1);
     } catch (error) {
       console.error("Error fetching purchases:", error);
     } finally {
@@ -47,27 +67,37 @@ function PurchaseHistory() {
     return new Date(date).toLocaleDateString();
   };
 
-  if (loading) {
-    return <div className="p-8">Loading purchases...</div>;
-  }
-
   return (
     <div className="p-8 min-h-screen bg-slate-50 dark:bg-slate-950">
+      {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Purchase History</h1>
 
-        <button
-          onClick={() => (window.location.href = "/purchases/new")}
-          className="px-4 py-2 bg-indigo-500 text-white rounded-lg"
-        >
-          New Purchase
-        </button>
+        <div className="flex gap-3">
+          <input
+            type="text"
+            placeholder="Search purchases..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="border px-3 py-2 rounded-lg"
+          />
+
+          <button
+            onClick={() => navigate("/purchases")}
+            className="px-4 py-2 bg-indigo-500 text-white rounded-lg"
+          >
+            New Purchase
+          </button>
+        </div>
       </div>
 
-      {purchases.length === 0 ? (
-        <p>No purchases found</p>
-      ) : (
-        <div className="bg-white border rounded-xl overflow-x-auto">
+      {/* TABLE */}
+      <div className="bg-white border rounded-xl overflow-x-auto">
+        {loading ? (
+          <div className="p-6 text-center">Loading purchases...</div>
+        ) : purchases.length === 0 ? (
+          <div className="p-6 text-center">No purchases found</div>
+        ) : (
           <table className="w-full text-sm">
             <thead className="bg-slate-100">
               <tr>
@@ -90,11 +120,11 @@ function PurchaseHistory() {
                     {purchase.supplierName || "-"}
                   </td>
 
-                  {/* Products */}
                   <td className="p-3">
                     {purchase.items?.map((item, index) => (
                       <div key={index}>
-                        {item.productId?.name} × {item.quantity}
+                        {item.productId?.name ?? "Unknown Product"} ×{" "}
+                        {item.quantity}
                       </div>
                     ))}
                   </td>
@@ -112,8 +142,31 @@ function PurchaseHistory() {
               ))}
             </tbody>
           </table>
-        </div>
-      )}
+        )}
+      </div>
+
+      {/* PAGINATION */}
+      <div className="flex justify-center gap-3 mt-6">
+        <button
+          disabled={page === 1}
+          onClick={() => setPage(page - 1)}
+          className="px-3 py-1 border rounded disabled:opacity-50"
+        >
+          Prev
+        </button>
+
+        <span className="px-2">
+          Page {page} of {totalPages}
+        </span>
+
+        <button
+          disabled={page === totalPages}
+          onClick={() => setPage(page + 1)}
+          className="px-3 py-1 border rounded disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 }

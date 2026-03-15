@@ -33,11 +33,27 @@ export interface Product {
 export interface ProductsContextType {
   products: Product[];
   loading: boolean;
-  refreshProducts: () => Promise<void>;
+
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+
+  refreshProducts: (
+    page?: number,
+    limit?: number,
+    search?: string,
+  ) => Promise<void>;
 }
 
 export const ProductsContext = createContext<ProductsContextType>({
   products: [],
   loading: false,
+
+  page: 1,
+  limit: 10,
+  total: 0,
+  totalPages: 1,
+
   refreshProducts: async () => {},
 });
