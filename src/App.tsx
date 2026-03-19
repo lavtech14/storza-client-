@@ -13,83 +13,87 @@ import PurchaseHistoryPage from "./pages/PurchaseHistory.js";
 
 import { ProductsProvider } from "./context/ProductsProvider";
 import CreateUserPage from "./pages/CreateUserPage.js";
+import { Toaster } from "react-hot-toast";
 
 function App() {
   return (
-    <ProductsProvider>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/create-store" element={<CreateStore />} />
-        <Route path="/create-user" element={<CreateUserPage />} />
+    <>
+      <Toaster position="top-right" reverseOrder={false} />
+      <ProductsProvider>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/create-store" element={<CreateStore />} />
+          <Route path="/create-user" element={<CreateUserPage />} />
 
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <Dashboard />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <Dashboard />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/products"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <ProductPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/products"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <ProductPage />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/sales"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <SalesPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/sales"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <SalesPage />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/sales-history"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <SalesHistoryPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/sales-history"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <SalesHistoryPage />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/purchases"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <PurchasePage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/purchases"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <PurchasePage />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/purchases-history"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <PurchaseHistoryPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
-    </ProductsProvider>
+          <Route
+            path="/purchases-history"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <PurchaseHistoryPage />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </ProductsProvider>
+    </>
   );
 }
 

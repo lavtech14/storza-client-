@@ -146,25 +146,25 @@ function PurchaseHistory() {
       </div>
 
       {/* PAGINATION */}
-      <div className="flex justify-center gap-3 mt-6">
+      <div className="flex items-center gap-4 mt-6 justify-center">
         <button
           disabled={page === 1}
-          onClick={() => setPage(page - 1)}
-          className="px-3 py-1 border rounded disabled:opacity-50"
+          onClick={() => setPage((p) => p - 1)}
+          className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50"
         >
-          Prev
+          &lt;
         </button>
 
-        <span className="px-2">
-          Page {page} of {totalPages}
+        <span className="text-sm font-medium">
+          {page} / {totalPages}
         </span>
 
         <button
           disabled={page === totalPages}
-          onClick={() => setPage(page + 1)}
-          className="px-3 py-1 border rounded disabled:opacity-50"
+          onClick={() => setPage((p) => p + 1)}
+          className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50"
         >
-          Next
+          &gt;
         </button>
       </div>
     </div>

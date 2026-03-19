@@ -3,6 +3,7 @@ import useDebounce from "../hooks/useDebounce";
 import api from "../api/axios";
 import { useProducts } from "../context/useProducts";
 import { type Product } from "../context/ProductsContext";
+import { socket } from "../socket.js";
 
 function ProductPage() {
   const { products, loading, refreshProducts, totalPages } = useProducts();
@@ -32,9 +33,44 @@ function ProductPage() {
   };
 
   const [newProduct, setNewProduct] = useState(initialState);
+
   useEffect(() => {
     refreshProducts(page, limit, debouncedSearch);
   }, [page, debouncedSearch]);
+
+  useEffect(() => {
+    // ✅ When product is created
+    socket.on("productCreated", () => {
+      refreshProducts(page, limit, debouncedSearch);
+    });
+
+    // ✅ When product is updated
+    socket.on("productUpdated", () => {
+      refreshProducts(page, limit, debouncedSearch);
+    });
+
+    // ✅ When product is deleted
+    socket.on("productDeleted", () => {
+      refreshProducts(page, limit, debouncedSearch);
+    });
+
+    // 🧹 Cleanup (VERY IMPORTANT)
+    return () => {
+      socket.off("productCreated");
+      socket.off("productUpdated");
+      socket.off("productDeleted");
+    };
+  }, [page, debouncedSearch]);
+  useEffect(() => {
+    socket.on("lowStock", (product) => {
+      alert(`⚠️ ${product.name} is low stock`);
+    });
+
+    // 🧹 Cleanup (VERY IMPORTANT)
+    return () => {
+      socket.off("lowStock");
+    };
+  }, []);
   const handleChange = (field: string, value: string) => {
     setNewProduct((prev) => ({
       ...prev,
@@ -81,7 +117,7 @@ function ProductPage() {
 
       setShowForm(false);
       setNewProduct(initialState);
-      await refreshProducts(page, limit, debouncedSearch);
+      // await refreshProducts(page, limit, debouncedSearch);
     } catch (error) {
       console.error(error);
       alert("Error creating product");
@@ -147,7 +183,7 @@ function ProductPage() {
       setNewProduct(initialState);
       setShowForm(false);
 
-      await refreshProducts(page, limit, debouncedSearch);
+      // await refreshProducts(page, limit, debouncedSearch);
     } catch (error) {
       console.error(error);
       alert("Error updating product");
@@ -163,7 +199,7 @@ function ProductPage() {
 
       await api.delete(`/products/${id}`);
 
-      await refreshProducts(page, limit, debouncedSearch);
+      // await refreshProducts(page, limit, debouncedSearch);
     } catch (error) {
       console.error(error);
       alert("Error deleting product");
@@ -189,10 +225,11 @@ function ProductPage() {
       <div className="mb-6">
         <input
           type="text"
-          placeholder="Search name, brand, category, sku..."
+          placeholder="Search..."
           value={search}
           onChange={(e) => {
-            setSearch(e.target.value);
+            const value = e.target.value;
+            setSearch(value.trimStart());
             setPage(1);
           }}
           className="border px-3 py-2 rounded-lg w-80"
@@ -375,25 +412,25 @@ function ProductPage() {
           </table>
         </div>
       )}
-      <div className="flex justify-center gap-3 mt-6">
+      <div className="flex items-center gap-4 mt-6 justify-center">
         <button
           disabled={page === 1}
           onClick={() => setPage((p) => p - 1)}
-          className="px-3 py-1 border rounded"
+          className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50"
         >
-          Prev
+          &lt;
         </button>
 
-        <span>
-          Page {page} of {totalPages}
+        <span className="text-sm font-medium">
+          {page} / {totalPages}
         </span>
 
         <button
           disabled={page === totalPages}
           onClick={() => setPage((p) => p + 1)}
-          className="px-3 py-1 border rounded"
+          className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50"
         >
-          Next
+          &gt;
         </button>
       </div>
     </div>

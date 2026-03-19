@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import api from "../api/axios";
 import useDebounce from "../hooks/useDebounce";
+import { socket } from "../socket.js";
+import { useNavigate } from "react-router-dom";
 
 interface SaleItem {
   productId: {
@@ -13,14 +15,11 @@ interface Sale {
   _id: string;
   invoiceNumber: string;
   customerName?: string;
-
   subtotal: number;
   gstAmount: number;
   totalAmount: number;
-
   paymentMethod: string;
   createdAt: string;
-
   items?: SaleItem[];
 }
 
@@ -35,13 +34,16 @@ function SalesHistory() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
 
+  const navigate = useNavigate();
+
+  /* RESET PAGE ON SEARCH */
   useEffect(() => {
     setPage(1);
   }, [debouncedSearch]);
 
+  /* FETCH SALES */
   useEffect(() => {
     fetchSales();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, debouncedSearch]);
 
   const fetchSales = async () => {
@@ -49,11 +51,7 @@ function SalesHistory() {
       setLoading(true);
 
       const response = await api.get("/sales", {
-        params: {
-          page,
-          limit,
-          search: debouncedSearch,
-        },
+        params: { page, limit, search: debouncedSearch },
       });
 
       setSales(response.data.data || []);
@@ -62,6 +60,46 @@ function SalesHistory() {
       console.error("Error fetching sales:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  /* SOCKET EVENTS */
+  useEffect(() => {
+    socket.on("saleCreated", () => fetchSales());
+    socket.on("saleUpdated", () => fetchSales());
+
+    socket.on("saleDeleted", ({ saleId }) => {
+      setSales((prev) => prev.filter((s) => s._id !== saleId));
+    });
+
+    return () => {
+      socket.off("saleCreated");
+      socket.off("saleUpdated");
+      socket.off("saleDeleted");
+    };
+  }, []);
+
+  /* NAVIGATION HANDLERS */
+  const handleView = (id: string) => {
+    navigate(`/sales/${id}`);
+  };
+
+  const handleEdit = (id: string) => {
+    navigate(`/sales/edit/${id}`);
+  };
+
+  /* DELETE */
+  const handleDelete = async (id: string) => {
+    const confirmDelete = window.confirm("Delete this sale?");
+    if (!confirmDelete) return;
+
+    try {
+      await api.delete(`/sales/${id}`);
+
+      // Optimistic update
+      setSales((prev) => prev.filter((s) => s._id !== id));
+    } catch (error) {
+      console.error("Delete failed", error);
     }
   };
 
@@ -78,14 +116,14 @@ function SalesHistory() {
         <div className="flex gap-3">
           <input
             type="text"
-            placeholder="Search customer, invoice..."
+            placeholder="Search..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="border px-3 py-2 rounded-lg"
           />
 
           <button
-            onClick={() => (window.location.href = "/sales/new")}
+            onClick={() => navigate("/sales")}
             className="px-4 py-2 bg-emerald-500 text-white rounded-lg"
           >
             New Sale
@@ -107,15 +145,15 @@ function SalesHistory() {
           <table className="w-full text-sm">
             <thead className="bg-slate-200 dark:bg-slate-800">
               <tr>
-                <th className="p-3 text-left">Date</th>
-                <th className="p-3 text-left">Invoice</th>
-                <th className="p-3 text-left">Customer</th>
-                <th className="p-3 text-left">Products</th>
-                <th className="p-3 text-left">Subtotal</th>
-                <th className="p-3 text-left">GST</th>
-                <th className="p-3 text-left">Total</th>
-                <th className="p-3 text-left">Payment</th>
-                <th className="p-3 text-left">Action</th>
+                <th className="p-3">Date</th>
+                <th className="p-3">Invoice</th>
+                <th className="p-3">Customer</th>
+                <th className="p-3">Products</th>
+                <th className="p-3">Subtotal</th>
+                <th className="p-3">GST</th>
+                <th className="p-3">Total</th>
+                <th className="p-3">Payment</th>
+                <th className="p-3">Actions</th>
               </tr>
             </thead>
 
@@ -139,7 +177,6 @@ function SalesHistory() {
                   </td>
 
                   <td className="p-3">₹{sale.subtotal?.toFixed(2)}</td>
-
                   <td className="p-3">₹{sale.gstAmount?.toFixed(2)}</td>
 
                   <td className="p-3 font-semibold">
@@ -148,14 +185,26 @@ function SalesHistory() {
 
                   <td className="p-3 capitalize">{sale.paymentMethod}</td>
 
-                  <td className="p-3">
+                  <td className="p-3 flex gap-2">
                     <button
-                      onClick={() =>
-                        (window.location.href = `/sales/${sale._id}`)
-                      }
+                      onClick={() => handleView(sale._id)}
                       className="text-indigo-600 hover:underline"
                     >
                       View
+                    </button>
+
+                    <button
+                      onClick={() => handleEdit(sale._id)}
+                      className="text-yellow-600 hover:underline"
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      onClick={() => handleDelete(sale._id)}
+                      className="text-red-600 hover:underline"
+                    >
+                      Delete
                     </button>
                   </td>
                 </tr>
@@ -166,25 +215,25 @@ function SalesHistory() {
       </div>
 
       {/* PAGINATION */}
-      <div className="flex justify-center gap-3 mt-6">
+      <div className="flex items-center gap-4 mt-6 justify-center">
         <button
           disabled={page === 1}
-          onClick={() => setPage(page - 1)}
+          onClick={() => setPage((p) => p - 1)}
           className="px-3 py-1 border rounded disabled:opacity-50"
         >
-          Prev
+          &lt;
         </button>
 
-        <span>
-          Page {page} of {totalPages}
+        <span className="text-sm font-medium">
+          {page} / {totalPages}
         </span>
 
         <button
           disabled={page === totalPages}
-          onClick={() => setPage(page + 1)}
+          onClick={() => setPage((p) => p + 1)}
           className="px-3 py-1 border rounded disabled:opacity-50"
         >
-          Next
+          &gt;
         </button>
       </div>
     </div>
