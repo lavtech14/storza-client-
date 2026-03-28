@@ -7,14 +7,14 @@ import { HiEye, HiEyeOff } from "react-icons/hi";
 
 // Define the expected response type
 interface LoginResponse {
-  token: string;
+  accessToken: string;
+  refreshToken: string;
   user: {
     id: string;
     email: string;
     name?: string;
     role: string;
-    isAdmin?: boolean;
-    // Add any other user fields your API returns
+    storeId: string;
   };
 }
 
@@ -40,31 +40,18 @@ function LoginPage() {
       setLoading(true);
       setErrorMessage(null);
 
-      // Update the type here to expect user data
       const res = await api.post<LoginResponse>("/auth/login", {
         email,
         password,
       });
 
-      console.log("Login response:", res.data); // Debug log
+      const { accessToken, refreshToken, user } = res.data;
 
-      // Check if user data is present in the response
-      if (res.data.user) {
-        // Pass both token and user data to login function
-        login(res.data.token, res.data.user);
-      } else {
-        // If your API doesn't return user data, you might need to fetch user profile separately
-        // Option 1: Just pass token and handle user fetch in AuthProvider
-        login(res.data.token);
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
+      localStorage.setItem("user", JSON.stringify(user));
 
-        // Option 2: Fetch user profile after login
-        try {
-          const userRes = await api.get("/auth/profile");
-          login(res.data.token, userRes.data);
-        } catch (profileErr) {
-          console.error("Failed to fetch user profile:", profileErr);
-        }
-      }
+      login(accessToken, user);
 
       if (rememberMe) {
         localStorage.setItem("rememberEmail", email);

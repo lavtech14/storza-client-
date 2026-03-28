@@ -8,6 +8,7 @@ import MainLayout from "./layout/MainLayout";
 import HomePage from "./pages/HomePage";
 import SalesHistoryPage from "./pages/SalesHistoryPage";
 import CreateStore from "./pages/CreateStore";
+// import Purchase from "./pages/PurchasePage.js";
 import PurchasePage from "./pages/PurchasePage.js";
 import PurchaseHistoryPage from "./pages/PurchaseHistory.js";
 
